@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Workspace Setup</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+  :root {
+    --slate: #4f6d7a; --brass: #d1a84a; --charcoal: #2e3236;
+    --bg: #f8f7f4; --surface: #ffffff; --border: #e4e0d8;
+    --text: #2e3236; --muted: #7a8690; --success: #4a9e6e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+  .header { text-align: center; margin-bottom: 40px; max-width: 600px; }
+  .logo { font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--brass); margin-bottom: 16px; }
+  .header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: var(--charcoal); line-height: 1.2; margin-bottom: 12px; }
+  .header p { font-size: 15px; color: var(--muted); line-height: 1.6; }
+  .progress-bar { width: 100%; max-width: 640px; margin-bottom: 32px; }
+  .progress-labels { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .progress-label { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+  .progress-label.active { color: var(--slate); }
+  .progress-label.done { color: var(--brass); }
+  .progress-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--slate), var(--brass)); border-radius: 2px; transition: width 0.5s ease; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 36px; width: 100%; max-width: 640px; margin-bottom: 16px; }
+  .block-label { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--brass); margin-bottom: 8px; }
+  .card h2 { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 600; color: var(--charcoal); margin-bottom: 6px; }
+  .card .description { font-size: 14px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+  .question-group { margin-bottom: 20px; }
+  .question-group > label { display: block; font-size: 13px; font-weight: 500; color: var(--charcoal); margin-bottom: 6px; }
+  input[type="text"], textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--text); background: var(--bg); transition: border-color 0.2s; outline: none; }
+  input[type="text"]:focus, textarea:focus { border-color: var(--slate); background: #fff; }
+  textarea { resize: vertical; min-height: 80px; }
+  .radio-group, .checkbox-group { display: flex; flex-direction: column; gap: 8px; }
+  .choice-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; font-size: 14px; user-select: none; }
+  .choice-option:hover { border-color: var(--slate); background: #f0f5f7; }
+  .choice-option.selected { border-color: var(--slate); background: #f0f5f7; color: var(--slate); font-weight: 500; }
+  .choice-indicator { width: 16px; height: 16px; border: 2px solid var(--border); flex-shrink: 0; transition: all 0.15s; }
+  .radio-indicator { border-radius: 50%; }
+  .checkbox-indicator { border-radius: 3px; }
+  .choice-option.selected .choice-indicator { border-color: var(--slate); background: var(--slate); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; }
+  .btn-primary { background: var(--slate); color: white; }
+  .btn-primary:hover { background: #3d5764; }
+  .btn-secondary { background: transparent; color: var(--slate); border: 1px solid var(--slate); }
+  .btn-secondary:hover { background: #f0f5f7; }
+  .btn-brass { background: var(--brass); color: white; }
+  .btn-brass:hover { background: #b8922e; }
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .status-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+  .status-dot.done { background: var(--success); }
+  .status-dot.active { background: var(--brass); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .file-preview { background: var(--charcoal); border-radius: 8px; padding: 20px; margin-bottom: 16px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; color: #e8e4dc; max-height: 280px; overflow-y: auto; white-space: pre-wrap; }
+  .file-tab { display: inline-flex; gap: 8px; margin-bottom: 12px; }
+  .tab-btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--muted); transition: all 0.15s; }
+  .tab-btn.active { background: var(--slate); color: white; border-color: var(--slate); }
+  .agent-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .agent-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .agent-name { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; color: var(--charcoal); }
+  .agent-badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px; background: #eef2f4; color: var(--slate); }
+  .agent-desc { font-size: 13px; color: var(--muted); line-height: 1.4; }
+  .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .checklist-item:last-child { border-bottom: none; }
+  .check-icon { width: 18px; height: 18px; border-radius: 50%; background: #eef7f2; color: var(--success); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; font-size: 11px; }
+  .download-zone { text-align: center; padding: 32px; border: 2px dashed var(--border); border-radius: 12px; margin-top: 20px; }
+  .download-icon { font-size: 40px; margin-bottom: 12px; }
+  .download-zone h3 { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .download-zone p { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  .error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Whetstone Collective</div>
+  <h1>AI Workspace Setup</h1>
+  <p>Answer a few questions and we'll build your personalized Claude setup, recommend your agent stack, and package the full workspace for download.</p>
+</div>
+
+<div class="progress-bar">
+  <div class="progress-labels">
+    <span class="progress-label" id="label-0">Who You Are</span>
+    <span class="progress-label" id="label-1">Your Tools</span>
+    <span class="progress-label" id="label-2">Pain Points</span>
+    <span class="progress-label" id="label-3">Working Style</span>
+    <span class="progress-label" id="label-4">Tech Comfort</span>
+    <span class="progress-label" id="label-5">Your Files</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+  </div>
+</div>
+
+<div id="app"></div>
+
+<script>
+const GITHUB_ZIP_URL = "https://codeload.github.com/Whetstone-Collective/ai-workspace-template/zip/refs/heads/main";
+
+const BLOCKS = [
+  { id:0, label:"Block 1 of 5", title:"Who Are You?", description:"Tell us about your role and what a typical day looks like.", fields:[
+    {id:"name", label:"Your name", type:"text", placeholder:"First name is fine"},
+    {id:"role", label:"Your role or title", type:"text", placeholder:"e.g. Product Manager, Engineering Lead, Founder"},
+    {id:"company", label:"Company or team name", type:"text", placeholder:"Company or team description"},
+    {id:"day", label:"What does a typical day look like? Where does your time actually go?", type:"textarea", placeholder:"Meetings, writing, reviews, code, customer calls..."},
+    {id:"hope", label:"What kind of work are you hoping Claude can help with most?", type:"textarea", placeholder:"Be specific if you can"}
+  ]},
+  { id:1, label:"Block 2 of 5", title:"Your Tools", description:"Where does your work live?", fields:[
+    {id:"tools", label:"What tools do you use daily?", type:"textarea", placeholder:"Notion, Jira, Slack, GitHub, Google Docs, Salesforce..."},
+    {id:"work_lives", label:"Where does your work primarily live?", type:"checkbox", options:["Notion","Google Docs / Drive","Confluence","Jira / Linear","Email","Slack / Teams","Spreadsheets","GitHub / GitLab","Other"]},
+    {id:"slow_tool", label:"Is there a tool that slows you down most?", type:"text", placeholder:"Optional"}
+  ]},
+  { id:2, label:"Block 3 of 5", title:"Pain Points and Goals", description:"What's costing you time and what would a win look like?", fields:[
+    {id:"pain_points", label:"What are your 2-3 biggest time sinks or frustrations right now?", type:"textarea", placeholder:"Writing, meetings, context switching, reviews, reporting..."},
+    {id:"one_thing", label:"If Claude could do one thing really well for you, what would it be?", type:"text", placeholder:"Be specific"},
+    {id:"current_project", label:"Is there a specific project Claude could help with immediately?", type:"textarea", placeholder:"Optional but helpful"}
+  ]},
+  { id:3, label:"Block 4 of 5", title:"Working Style", description:"How you think and work shapes how Claude should respond.", fields:[
+    {id:"comm_style", label:"How do you prefer Claude to communicate?", type:"radio", options:["Concise and direct — get to the point fast","Detailed and thorough — give me the full picture","Depends on the task"]},
+    {id:"output_format", label:"What output format do you generally prefer?", type:"radio", options:["Bullet points and lists","Prose paragraphs","Tables when possible","Context-dependent"]},
+    {id:"hard_rules", label:"Any hard formatting or writing rules for Claude?", type:"textarea", placeholder:"e.g. Never use em dashes. Always show sources. No bullet points for short answers."},
+    {id:"decisions", label:"How do you make decisions?", type:"radio", options:["Data-driven — show me the numbers","Intuition plus input from others","Collaborative — think it through together","Fast and directional — good enough to move"]},
+    {id:"task_capture", label:"How do you capture and manage tasks?", type:"text", placeholder:"e.g. Notion, brain dump, calendar blocks, sticky notes..."},
+    {id:"energy", label:"Do you have focus or energy patterns Claude should respect?", type:"text", placeholder:"e.g. Deep work mornings, async-first, no interruptions after 4pm"}
+  ]},
+  { id:4, label:"Block 5 of 5", title:"Technical Comfort", description:"This shapes which tools and setup paths we recommend.", fields:[
+    {id:"terminal", label:"Have you used the terminal / command line before?", type:"radio", options:["Yes, regularly","A little","No — what's that?"]},
+    {id:"coding", label:"Do you write any code, even occasionally?", type:"radio", options:["Yes — it's part of my job","Sometimes — scripts, light automation","Rarely or never"]},
+    {id:"coding_lang", label:"If yes, what languages or tools?", type:"text", placeholder:"e.g. Python, JavaScript, SQL, no-code tools"},
+    {id:"tech_comfort", label:"How comfortable are you with technical tools? (1-5)", type:"radio", options:["1 — I prefer everything visual","2 — I can follow instructions","3 — Comfortable but not a developer","4 — Pretty technical","5 — Comfortable with code and APIs"]}
+  ]}
+];
+
+const ROLE_AGENTS = {
+  product: ["agile-product-owner","sprint-facilitator","product-analyst","product-strategist","chief-of-staff"],
+  engineering: ["senior-engineer","engineering-lead","test-architect","solutions-architect","chief-of-staff"],
+  founder: ["chief-of-staff","ceo-advisor","product-strategist","cro-advisor","capture"],
+  marketing: ["cmo-advisor","content-creator","aeo","chief-of-staff","capture"],
+  operations: ["bizops-orchestrator","coo-advisor","completion-loop","chief-of-staff","capture"],
+  research: ["dossier","litreview","pulse","research","chief-of-staff"],
+  design: ["ux-researcher","product-strategist","chief-of-staff","capture","weekly-review"],
+  default: ["chief-of-staff","capture","inbox-triage","weekly-review","task-triage"]
+};
+
+const AGENT_DESCRIPTIONS = {
+  "chief-of-staff":"Orchestrates complex cross-functional work. Start here when you're not sure which agent to use.",
+  "agile-product-owner":"Owns backlog, writes user stories, runs RICE prioritization, manages Definition of Ready.",
+  "sprint-facilitator":"Runs all five sprint ceremonies with discipline. Holds sprint context across the full cycle.",
+  "product-analyst":"Defines KPIs, builds metric frameworks, analyzes product performance.",
+  "product-strategist":"Quarterly OKRs, roadmap building, opportunity sizing.",
+  "senior-engineer":"Code review, architecture decisions, debugging, technical guidance.",
+  "engineering-lead":"Team coordination, sprint health, technical escalations.",
+  "test-architect":"Test strategy, coverage analysis, QA planning.",
+  "solutions-architect":"System design, integration mapping, technical decision-making.",
+  "ceo-advisor":"Strategic planning, investor prep, company direction.",
+  "cro-advisor":"Revenue engine design, quota setting, NRR modeling.",
+  "cmo-advisor":"Brand strategy, channel selection, marketing budget allocation.",
+  "content-creator":"Content across formats — blog, social, email, copy.",
+  "aeo":"Answer Engine Optimization — getting your content cited by AI tools.",
+  "bizops-orchestrator":"Business operations, process documentation, vendor management.",
+  "coo-advisor":"OKR design, operational frameworks, org design.",
+  "completion-loop":"Task accountability, staleness detection, closing open loops.",
+  "capture":"Brain-dump organizer. Turns scattered thoughts into structured action.",
+  "inbox-triage":"Email triage and draft replies. Drafts only, never sends.",
+  "weekly-review":"Friday review agent. Closes the week, sets three priorities for next week.",
+  "task-triage":"Inbox-zero for your task list. Four-decision protocol.",
+  "dossier":"Decision-grade research on companies, people, or topics.",
+  "litreview":"Academic literature review and synthesis.",
+  "pulse":"What's happening right now in a topic or market.",
+  "research":"General research router and fallback.",
+  "ux-researcher":"User research planning, persona generation, journey mapping.",
+  "email-action-extractor":"Pulls prioritized action items from any email or thread.",
+  "meeting-debrief":"Decisions, actions, open questions from any meeting transcript.",
+  "email-response-drafter":"Draft replies calibrated to audience and tone. Never sends."
+};
+
+// ---- STATE ----
+const state = { currentBlock:0, answers:{}, generatedFiles:null, zipBlob:null };
+
+// ---- HELPERS ----
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function detectRole(answers) {
+  const combined = ((answers.role||"")+" "+(answers.day||"")).toLowerCase();
+  if (combined.match(/product manager|pm\b|product owner|po\b|scrum|agile|roadmap|backlog/)) return "product";
+  if (combined.match(/engineer|developer|\bdev\b|coding|software|frontend|backend|fullstack/)) return "engineering";
+  if (combined.match(/founder|ceo|cto|co-founder|startup|venture/)) return "founder";
+  if (combined.match(/marketing|growth|content|brand|\bseo\b|demand gen/)) return "marketing";
+  if (combined.match(/ops|operations|bizops|chief of staff|process/)) return "operations";
+  if (combined.match(/research|analyst|\bdata\b|insights|scientist/)) return "research";
+  if (combined.match(/design|ux|ui|user experience|product design/)) return "design";
+  return "default";
+}
+
+function getRecommendedAgents(answers) {
+  const role = detectRole(answers);
+  let agents = [...ROLE_AGENTS[role]];
+  const combined = ((answers.pain_points||"")+" "+(answers.one_thing||"")).toLowerCase();
+  if (combined.match(/email|inbox|message/)) { if(!agents.includes("email-action-extractor")) agents.splice(2,0,"email-action-extractor"); if(!agents.includes("email-response-drafter")) agents.splice(3,0,"email-response-drafter"); }
+  if (combined.match(/meeting|transcript|notes|debrief/)) { if(!agents.includes("meeting-debrief")) agents.splice(2,0,"meeting-debrief"); }
+  if (combined.match(/task|overwhelm|priority|todo/)) { if(!agents.includes("capture")) agents.push("capture"); if(!agents.includes("task-triage")) agents.push("task-triage"); }
+  return [...new Set(agents)].slice(0,5);
+}
+
+// ---- FILE BUILDERS ----
+function buildCLAUDEmd(answers, agents) {
+  const today = new Date().toISOString().split('T')[0];
+  const agentList = agents.map(a=>`- **${a}** — ${AGENT_DESCRIPTIONS[a]||""}`).join('\n');
+  return `# CLAUDE.md — Working Memory\n\n## About ${answers.name||"Me"}\n${answers.name||"I am"} a ${answers.role||"professional"} at ${answers.company||"my organization"}. ${answers.hope||""}\n\n## What I'm Working On\n${answers.current_project||"See CONTEXT.md for current projects."}\n\n## My Biggest Priorities Right Now\n1. ${(answers.pain_points||"").split('\n')[0]||"To be updated"}\n2. ${answers.one_thing||"To be updated"}\n3. See CONTEXT.md for full context\n\n## How I Like to Work With Claude\n- Communication: ${answers.comm_style||"Direct and concise"}\n- Output format: ${answers.output_format||"Context-dependent"}\n${answers.hard_rules?`- Rules: ${answers.hard_rules}`:""}\n- Decision style: ${answers.decisions||"Collaborative"}\n\n## My Tools\n${(answers.tools||"").split(',').map(t=>`- ${t.trim()}`).filter(t=>t!=="- ").join('\n')||"- See CONTEXT.md"}\n\n## Starting Agent Stack\n${agentList}\n\n## Last Updated\n${today}`;
+}
+
+function buildCONTEXTmd(answers, agents) {
+  const today = new Date().toISOString().split('T')[0];
+  const techLevel = (answers.tech_comfort||"3").charAt(0);
+  return `# CONTEXT.md — Full Context\n\n## Role and Responsibilities\n${answers.name||"User"} works as ${answers.role||"a professional"} at ${answers.company||"their organization"}.\n\n${answers.day||""}\n\n## Current Projects\n${answers.current_project?`### Active Focus\n- Goal: ${answers.current_project}\n- Status: Active`:"### To Be Added\nUpdate this section with current projects and their status."}\n\n## Pain Points and Goals\n### What's Not Working\n${answers.pain_points||"To be filled in."}\n\n### What Success Looks Like\n${answers.one_thing||"To be defined."}\n\n## Working Style\n- Communication preference: ${answers.comm_style||"Not specified"}\n- Output format preference: ${answers.output_format||"Context-dependent"}\n- Hard rules for Claude: ${answers.hard_rules||"None specified"}\n- Decision-making style: ${answers.decisions||"Not specified"}\n- Task capture method: ${answers.task_capture||"Not specified"}\n- Energy and focus patterns: ${answers.energy||"Not specified"}\n\n## Technical Profile\n- Coding comfort: ${techLevel}/5\n- Terminal experience: ${answers.terminal||"Unknown"}\n- Languages or tools: ${answers.coding_lang||"None specified"}\n- Coding frequency: ${answers.coding||"Unknown"}\n\n## Tools and Integrations\n${answers.tools||""}\nPrimary surfaces: ${(answers.work_lives||[]).join(", ")||"Not specified"}\n${answers.slow_tool?`Friction point: ${answers.slow_tool}`:""}\n\n## Last Updated\n${today}`;
+}
+
+function buildManifest(agents) {
+  const lines = agents.map(a=>`### ${a}\n${AGENT_DESCRIPTIONS[a]||""}\n\nInvoke: \`"Act as my ${a}. [your task]"\``);
+  return `# Recommended Agent Stack\n\nGenerated: ${new Date().toISOString().split('T')[0]}\n\n## Your Starting Agents\n\n${lines.join('\n\n')}\n\n## How to Use\n\n1. Open Claude Code: \`cd ~/AI && claude\`\n2. Describe your task or say: \`"Act as my [agent-name]. [task]"\`\n3. Start with **chief-of-staff** for complex or multi-part work\n`;
+}
+
+// ---- GITHUB FETCH + ZIP ----
+async function buildPersonalizedZip(answers, agents, onStatus) {
+  onStatus("Fetching agent and skill library from GitHub...", 1);
+  const resp = await fetch(GITHUB_ZIP_URL);
+  if (!resp.ok) throw new Error("GitHub fetch failed: " + resp.status);
+  onStatus("Unpacking template...", 2);
+  const buf = await resp.arrayBuffer();
+  const templateZip = await JSZip.loadAsync(buf);
+  onStatus("Packaging your workspace...", 3);
+  const out = new JSZip();
+  const root = out.folder("AI");
+  const tasks = [];
+  templateZip.forEach((path, file) => {
+    const clean = path.replace(/^[^\/]+\//, "");
+    if (!clean || file.dir || clean.includes(".DS_Store")) return;
+    tasks.push(file.async("arraybuffer").then(c => root.file(clean, c)));
+  });
+  await Promise.all(tasks);
+  root.file("CLAUDE.md", buildCLAUDEmd(answers, agents));
+  root.file("CONTEXT.md", buildCONTEXTmd(answers, agents));
+  root.file("agent-manifest.md", buildManifest(agents));
+  onStatus("Generating zip...", 4);
+  return out.generateAsync({ type:"blob", compression:"DEFLATE", compressionOptions:{level:6} });
+}
+
+// ---- RENDER BLOCK ----
+function renderBlock(idx) {
+  const block = BLOCKS[idx];
+  let html = `<div class="card"><div class="block-label">${block.label}</div><h2>${block.title}</h2><p class="description">${block.description}</p>`;
+  block.fields.forEach(field => {
+    html += `<div class="question-group"><label>${esc(field.label)}</label>`;
+    const val = state.answers[field.id] || "";
+    if (field.type === "text") {
+      html += `<input type="text" id="f-${field.id}" value="${esc(val)}" placeholder="${esc(field.placeholder||"")}">`;
+    } else if (field.type === "textarea") {
+      html += `<textarea id="f-${field.id}" placeholder="${esc(field.placeholder||"")}">${esc(val)}</textarea>`;
+    } else if (field.type === "radio") {
+      html += `<div class="radio-group">`;
+      field.options.forEach((opt, i) => {
+        const sel = val === opt;
+        html += `<div class="choice-option${sel?" selected":""}" data-type="radio" data-field="${field.id}" data-idx="${i}">
+          <div class="choice-indicator radio-indicator"></div>
+          <span>${esc(opt)}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    } else if (field.type === "checkbox") {
+      const checked = Array.isArray(state.answers[field.id]) ? state.answers[field.id] : [];
+      html += `<div class="checkbox-group">`;
+      field.options.forEach((opt, i) => {
+        const sel = checked.includes(opt);
+        html += `<div class="choice-option${sel?" selected":""}" data-type="checkbox" data-field="${field.id}" data-idx="${i}">
+          <div class="choice-indicator checkbox-indicator"></div>
+          <span>${esc(opt)}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+  });
+  const isLast = idx === BLOCKS.length - 1;
+  html += `<div class="actions">
+    ${idx > 0 ? `<button class="btn btn-secondary" id="btn-back">← Back</button>` : `<span></span>`}
+    <button class="btn btn-primary" id="btn-next">${isLast ? "Generate My Workspace →" : "Continue →"}</button>
+  </div></div>`;
+  document.getElementById("app").innerHTML = html;
+  updateProgress(idx);
+
+  // Wire up buttons
+  const btnNext = document.getElementById("btn-next");
+  if (btnNext) btnNext.addEventListener("click", isLast ? doGenerate : doNext);
+  const btnBack = document.getElementById("btn-back");
+  if (btnBack) btnBack.addEventListener("click", doBack);
+
+  // Wire up choice options
+  document.querySelectorAll(".choice-option").forEach(el => {
+    el.addEventListener("click", () => {
+      const type = el.dataset.type;
+      const fieldId = el.dataset.field;
+      const idx = parseInt(el.dataset.idx);
+      const fieldDef = BLOCKS[state.currentBlock].fields.find(f => f.id === fieldId);
+      if (!fieldDef) return;
+      const opt = fieldDef.options[idx];
+      if (type === "radio") {
+        state.answers[fieldId] = opt;
+        el.closest(".radio-group").querySelectorAll(".choice-option").forEach(o => o.classList.remove("selected"));
+        el.classList.add("selected");
+      } else {
+        if (!Array.isArray(state.answers[fieldId])) state.answers[fieldId] = [];
+        const arr = state.answers[fieldId];
+        const i = arr.indexOf(opt);
+        if (i === -1) { arr.push(opt); el.classList.add("selected"); }
+        else { arr.splice(i,1); el.classList.remove("selected"); }
+      }
+    });
+  });
+}
+
+// ---- COLLECT TEXT ANSWERS ----
+function collectText() {
+  BLOCKS[state.currentBlock].fields.forEach(f => {
+    if (f.type === "text" || f.type === "textarea") {
+      const el = document.getElementById("f-" + f.id);
+      if (el) state.answers[f.id] = el.value;
+    }
+  });
+}
+
+function doNext() { collectText(); state.currentBlock++; renderBlock(state.currentBlock); window.scrollTo(0,0); }
+function doBack() { collectText(); state.currentBlock--; renderBlock(state.currentBlock); window.scrollTo(0,0); }
+
+// ---- GENERATE ----
+async function doGenerate() {
+  collectText();
+  const answers = state.answers;
+  const agents = getRecommendedAgents(answers);
+  state.generatedFiles = { claude: buildCLAUDEmd(answers,agents), context: buildCONTEXTmd(answers,agents), manifest: buildManifest(agents), agents };
+
+  document.getElementById("app").innerHTML = `<div class="card">
+    <div class="block-label">Almost there</div>
+    <h2>Building Your Workspace</h2>
+    <p class="description">Fetching the full agent and skill library and packaging your personalized setup.</p>
+    <div style="margin-top:24px">
+      <div class="status-row"><div class="status-dot done" id="d0"></div><span>Personalized files generated</span></div>
+      <div class="status-row"><div class="status-dot active" id="d1"></div><span id="s1">Fetching agent and skill library from GitHub...</span></div>
+      <div class="status-row"><div class="status-dot" id="d2"></div><span id="s2">Unpacking template</span></div>
+      <div class="status-row"><div class="status-dot" id="d3"></div><span id="s3">Packaging your workspace</span></div>
+      <div class="status-row"><div class="status-dot" id="d4"></div><span id="s4">Generating zip file</span></div>
+    </div>
+  </div>`;
+  updateProgress(5);
+
+  function setStatus(msg, step) {
+    for (let i=1; i<=4; i++) {
+      const dot = document.getElementById("d"+i);
+      if (!dot) continue;
+      if (i < step) dot.className="status-dot done";
+      else if (i===step) { dot.className="status-dot active"; const s=document.getElementById("s"+i); if(s) s.textContent=msg; }
+      else dot.className="status-dot";
+    }
+  }
+
+  try {
+    const blob = await buildPersonalizedZip(answers, agents, setStatus);
+    state.zipBlob = blob;
+    renderResults();
+  } catch(err) {
+    document.getElementById("app").innerHTML += `<div class="error-msg">Something went wrong: ${err.message}. Check your internet connection and try again.</div>`;
+  }
+}
+
+// ---- RESULTS ----
+function renderResults() {
+  const files = state.generatedFiles;
+  const sizeMB = state.zipBlob ? (state.zipBlob.size/1024/1024).toFixed(1) : "?";
+  const name = (state.answers.name||"setup").toLowerCase().replace(/\s+/g,"-");
+
+  const agentCards = files.agents.map(a=>`
+    <div class="agent-card">
+      <div class="agent-card-header"><span class="agent-name">${a}</span><span class="agent-badge">Recommended</span></div>
+      <div class="agent-desc">${AGENT_DESCRIPTIONS[a]||""}</div>
+    </div>`).join('');
+
+  const checks = ["Personalized CLAUDE.md generated","Personalized CONTEXT.md generated","Agent stack selected for your role","Full agent library included","Full skill library included","Setup checklist and README included"]
+    .map(t=>`<div class="checklist-item"><div class="check-icon">✓</div><span>${t}</span></div>`).join('');
+
+  document.getElementById("app").innerHTML = `
+    <div class="card">
+      <div class="block-label">Step 6 of 6</div>
+      <h2>Your Workspace is Ready, ${esc(state.answers.name||"there")}</h2>
+      <p class="description">Review your files below then download your complete AI workspace.</p>
+      <div class="file-tab">
+        <button class="tab-btn active" id="tab-claude">CLAUDE.md</button>
+        <button class="tab-btn" id="tab-context">CONTEXT.md</button>
+        <button class="tab-btn" id="tab-manifest">Agent Stack</button>
+      </div>
+      <div class="file-preview" id="file-preview">${esc(files.claude)}</div>
+      <h3 style="font-family:Space Grotesk;font-size:16px;font-weight:600;margin:24px 0 12px">Your Starting Agents</h3>
+      ${agentCards}
+    </div>
+    <div class="card">
+      <h2>Ready to Download</h2>
+      <p class="description" style="margin-bottom:16px">Your zip contains everything needed to get running in Claude Code.</p>
+      ${checks}
+      <div class="download-zone">
+        <div class="download-icon">📦</div>
+        <h3>ai-workspace-${name}.zip</h3>
+        <p>Full agent and skill library + your personalized files (${sizeMB} MB)</p>
+        <button class="btn btn-brass" id="btn-download">⬇ Download Your Workspace</button>
+      </div>
+      <div class="actions" style="margin-top:24px">
+        <button class="btn btn-secondary" id="btn-restart">← Edit Answers</button>
+        <span style="font-size:13px;color:var(--muted)">Unzip to ~/AI to get started</span>
+      </div>
+    </div>`;
+
+  updateProgress(5);
+
+  document.getElementById("btn-download").addEventListener("click", () => {
+    const url = URL.createObjectURL(state.zipBlob);
+    const a = document.createElement("a"); a.href=url; a.download=`ai-workspace-${name}.zip`; a.click();
+    URL.revokeObjectURL(url);
+  });
+  document.getElementById("btn-restart").addEventListener("click", () => { state.currentBlock=0; renderBlock(0); });
+  document.getElementById("tab-claude").addEventListener("click", function() { switchTab(files.claude, this); });
+  document.getElementById("tab-context").addEventListener("click", function() { switchTab(files.context, this); });
+  document.getElementById("tab-manifest").addEventListener("click", function() { switchTab(files.manifest, this); });
+}
+
+function switchTab(content, btn) {
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("file-preview").textContent = content;
+}
+
+function updateProgress(step) {
+  document.getElementById('progress-fill').style.width = Math.round((step/5)*100)+'%';
+  for (let i=0; i<=5; i++) {
+    const el = document.getElementById(`label-${i}`);
+    if (!el) continue;
+    el.className = 'progress-label'+(i<step?' done':i===step?' active':'');
+  }
+}
+
+// ---- INIT ----
+renderBlock(0);
+</script>
+</body>
+</html>
