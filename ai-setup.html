@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Setup — Whetstone Collective</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;1,300&family=Lato:wght@300;400;500&display=swap');
+
+:root {
+  --charcoal:#2e3236; --stone:#e6e7e4; --white:#ffffff;
+  --slate:#4f6d7a; --muted:#8c9196; --brass:#d1a84a;
+  --rust:#a05a3c; --bg:#f4f3f0; --border:#d8d6d0;
+  --success:#4a7c5e; --danger:#c0392b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--charcoal);min-height:100vh;display:flex;flex-direction:column;}
+
+/* HEADER */
+.site-header{background:var(--charcoal);padding:18px 40px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.site-logo{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:var(--white);}
+.site-logo span{color:var(--brass);}
+.header-tag{font-size:11px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;}
+
+/* HERO */
+.hero{background:var(--charcoal);padding:56px 40px 72px;position:relative;overflow:hidden;}
+.hero::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--brass),var(--slate),transparent);}
+.hero-inner{max-width:700px;margin:0 auto;}
+.hero-eye{font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass);margin-bottom:14px;}
+.hero h1{font-family:'Oswald',sans-serif;font-size:38px;font-weight:600;color:var(--white);line-height:1.1;margin-bottom:14px;letter-spacing:0.02em;}
+.hero h1 em{font-style:normal;color:var(--brass);}
+.hero p{font-family:'Merriweather',serif;font-size:14px;color:var(--stone);line-height:1.7;font-weight:300;max-width:540px;}
+
+/* NAV */
+.phase-nav{background:var(--white);border-bottom:1px solid var(--border);padding:0 40px;display:flex;overflow-x:auto;}
+.phase-tab{padding:14px 20px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px;}
+.phase-tab.active{color:var(--slate);border-bottom-color:var(--slate);}
+.phase-tab.done{color:var(--brass);border-bottom-color:var(--brass);}
+.phase-dot{width:5px;height:5px;border-radius:50%;background:var(--border);}
+.phase-tab.active .phase-dot{background:var(--slate);}
+.phase-tab.done .phase-dot{background:var(--brass);}
+
+/* PROGRESS */
+.prog-bar{background:var(--white);border-bottom:1px solid var(--border);padding:10px 40px;display:flex;align-items:center;gap:14px;}
+.prog-label{font-family:'Oswald',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.prog-track{flex:1;height:2px;background:var(--border);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--slate),var(--brass));transition:width 0.4s ease;}
+.prog-pct{font-family:'Oswald',sans-serif;font-size:11px;color:var(--brass);font-weight:600;width:32px;text-align:right;}
+
+/* MAIN */
+.main{max-width:800px;margin:0 auto;padding:40px 24px 80px;flex:1;width:100%;}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--border);border-radius:3px;margin-bottom:20px;overflow:hidden;}
+.card-header{padding:22px 26px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:14px;}
+.card-num{width:30px;height:30px;background:var(--charcoal);color:var(--white);border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:600;font-size:13px;flex-shrink:0;margin-top:1px;}
+.card-num.brass{background:var(--brass);}
+.card-num.slate{background:var(--slate);}
+.card-num.rust{background:var(--rust);}
+.card-title{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;color:var(--charcoal);letter-spacing:0.03em;margin-bottom:3px;}
+.card-desc{font-size:13px;color:var(--muted);font-family:'Merriweather',serif;font-weight:300;line-height:1.5;}
+.card-body{padding:22px 26px;}
+
+/* FIELDS */
+.fg{margin-bottom:20px;}
+.fg:last-child{margin-bottom:0;}
+.flabel{display:block;font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--charcoal);margin-bottom:5px;}
+.fhint{font-size:12px;color:var(--muted);margin-bottom:7px;font-family:'Merriweather',serif;font-weight:300;line-height:1.5;}
+input[type=text],textarea{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:2px;font-family:'Lato',sans-serif;font-size:14px;color:var(--charcoal);background:var(--bg);outline:none;transition:border-color 0.2s,background 0.2s;}
+input[type=text]:focus,textarea:focus{border-color:var(--slate);background:var(--white);}
+textarea{resize:vertical;min-height:85px;line-height:1.6;}
+
+/* CHOICES */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.cgrid.single{grid-template-columns:1fr;}
+.copt{display:flex;align-items:flex-start;gap:9px;padding:10px 13px;border:1px solid var(--border);border-radius:2px;cursor:pointer;transition:all 0.15s;font-size:13px;line-height:1.4;background:var(--bg);user-select:none;}
+.copt:hover{border-color:var(--slate);background:#eef2f4;}
+.copt.selected{border-color:var(--slate);background:#eef2f4;color:var(--slate);}
+.cind{width:15px;height:15px;border:2px solid var(--border);flex-shrink:0;margin-top:1px;transition:all 0.15s;border-radius:50%;}
+.cind.sq{border-radius:2px;}
+.copt.selected .cind{border-color:var(--slate);background:var(--slate);}
+
+/* PATH SELECTOR */
+.path-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:8px 0;}
+.path-card{border:2px solid var(--border);border-radius:3px;padding:20px;cursor:pointer;transition:all 0.2s;background:var(--bg);text-align:center;}
+.path-card:hover{border-color:var(--slate);background:#eef2f4;}
+.path-card.selected{border-color:var(--slate);background:#eef2f4;}
+.path-card.selected .path-icon{color:var(--slate);}
+.path-icon{font-size:28px;margin-bottom:10px;}
+.path-name{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:var(--charcoal);margin-bottom:5px;letter-spacing:0.04em;}
+.path-desc{font-size:12px;color:var(--muted);line-height:1.4;}
+.path-card.selected .path-name{color:var(--slate);}
+.multi-note{font-size:12px;color:var(--muted);font-family:'Merriweather',serif;font-style:italic;margin-top:10px;}
+
+/* ACTION BAR */
+.action-bar{display:flex;justify-content:space-between;align-items:center;padding:22px 0 0;border-top:1px solid var(--border);margin-top:28px;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:12px 26px;border-radius:2px;font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;border:none;}
+.btn-primary{background:var(--charcoal);color:var(--white);}
+.btn-primary:hover{background:var(--slate);}
+.btn-secondary{background:transparent;color:var(--slate);border:1px solid var(--slate);}
+.btn-secondary:hover{background:#eef2f4;}
+.btn-brass{background:var(--brass);color:var(--white);}
+.btn-brass:hover{background:#b8922e;}
+
+/* CHATBOT */
+.chat-fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;background:var(--slate);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:100;transition:all 0.2s;border:none;}
+.chat-fab:hover{background:var(--charcoal);transform:scale(1.05);}
+.chat-fab svg{width:22px;height:22px;fill:none;stroke:var(--white);stroke-width:2;}
+.chat-panel{position:fixed;bottom:92px;right:28px;width:340px;max-height:480px;background:var(--white);border:1px solid var(--border);border-radius:4px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:100;display:none;flex-direction:column;overflow:hidden;}
+.chat-panel.open{display:flex;}
+.chat-header{background:var(--charcoal);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
+.chat-header-title{font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--white);}
+.chat-header-sub{font-size:11px;color:var(--muted);}
+.chat-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0;}
+.chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.chat-msg{max-width:90%;padding:9px 12px;border-radius:3px;font-size:13px;line-height:1.5;}
+.chat-msg.ai{background:var(--bg);border:1px solid var(--border);align-self:flex-start;}
+.chat-msg.user{background:var(--slate);color:var(--white);align-self:flex-end;}
+.chat-msg.thinking{color:var(--muted);font-style:italic;}
+.chat-input-row{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;}
+.chat-input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:2px;font-family:'Lato',sans-serif;font-size:13px;outline:none;}
+.chat-input:focus{border-color:var(--slate);}
+.chat-send{padding:8px 14px;background:var(--slate);color:var(--white);border:none;border-radius:2px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;}
+.chat-send:hover{background:var(--charcoal);}
+
+/* STATUS */
+.status-list{margin-top:20px;}
+.srow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;}
+.srow:last-child{border-bottom:none;}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--border);flex-shrink:0;}
+.sdot.done{background:var(--success);}
+.sdot.active{background:var(--brass);animation:pulse 1s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* RESULTS */
+.result-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
+.rmeta{background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:14px;text-align:center;}
+.rmeta-num{font-family:'Oswald',sans-serif;font-size:26px;font-weight:600;color:var(--slate);}
+.rmeta-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-family:'Oswald',sans-serif;margin-top:3px;}
+.ftabs{display:flex;gap:3px;margin-bottom:0;}
+.ftab{padding:6px 14px;border-radius:2px 2px 0 0;font-family:'Oswald',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);border-bottom:none;background:var(--bg);color:var(--muted);}
+.ftab.active{background:var(--charcoal);color:var(--white);border-color:var(--charcoal);}
+.fprev{background:var(--charcoal);border-radius:0 2px 2px 2px;padding:18px;font-family:'Courier New',monospace;font-size:12px;line-height:1.7;color:#e8e4dc;max-height:300px;overflow-y:auto;white-space:pre-wrap;margin-bottom:20px;}
+.dl-zone{text-align:center;padding:36px;border:2px dashed var(--border);border-radius:3px;margin-top:20px;}
+.dl-icon{font-size:44px;margin-bottom:12px;}
+.dl-zone h3{font-family:'Oswald',sans-serif;font-size:19px;font-weight:600;color:var(--charcoal);margin-bottom:7px;letter-spacing:0.03em;}
+.dl-zone p{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.5;}
+
+/* INSTALL WIZARD */
+.wizard-step{background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:20px;margin-bottom:14px;}
+.wizard-step-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.wizard-step-num{width:28px;height:28px;background:var(--slate);color:var(--white);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:600;font-size:12px;flex-shrink:0;}
+.wizard-step-num.done-num{background:var(--success);}
+.wizard-step-title{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:var(--charcoal);letter-spacing:0.04em;}
+.wizard-step-body{font-size:13px;color:var(--muted);line-height:1.6;padding-left:40px;}
+.code-inline{font-family:'Courier New',monospace;font-size:12px;background:#eef2f4;color:var(--slate);padding:2px 6px;border-radius:2px;}
+.code-block{background:var(--charcoal);color:#e8e4dc;font-family:'Courier New',monospace;font-size:12px;line-height:1.7;padding:14px 16px;border-radius:2px;margin:10px 0;white-space:pre;overflow-x:auto;}
+.os-tabs{display:flex;gap:6px;margin-bottom:14px;}
+.os-tab{padding:6px 16px;border-radius:2px;font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--muted);transition:all 0.15s;}
+.os-tab.active{background:var(--slate);color:var(--white);border-color:var(--slate);}
+.callout{border-left:3px solid var(--brass);background:#fdf8ee;padding:12px 14px;border-radius:0 2px 2px 0;font-size:13px;color:var(--charcoal);margin:12px 0;line-height:1.5;}
+.callout strong{color:#9a6f1a;}
+.callout.blue{border-left-color:var(--slate);background:#eef2f4;}
+.callout.blue strong{color:var(--slate);}
+.callout.green{border-left-color:var(--success);background:#eef7f2;}
+.callout.green strong{color:var(--success);}
+.err-msg{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px 14px;border-radius:2px;font-size:13px;margin-top:14px;}
+.footer{background:var(--charcoal);padding:20px 40px;text-align:center;font-size:11px;color:var(--muted);font-family:'Oswald',sans-serif;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0;}
+.footer span{color:var(--brass);}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-logo">Whetstone <span>Collective</span></div>
+  <div class="header-tag">AI Setup</div>
+</header>
+
+<nav class="phase-nav" id="phase-nav">
+  <div class="phase-tab active" id="ptab-0"><div class="phase-dot"></div>Who You Are</div>
+  <div class="phase-tab" id="ptab-1"><div class="phase-dot"></div>Your Context</div>
+  <div class="phase-tab" id="ptab-2"><div class="phase-dot"></div>Your Files</div>
+  <div class="phase-tab" id="ptab-3"><div class="phase-dot"></div>Install</div>
+</nav>
+
+<div class="prog-bar">
+  <div class="prog-label">Progress</div>
+  <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="prog-pct" id="prog-pct">0%</div>
+</div>
+
+<div class="hero" id="hero">
+  <div class="hero-inner">
+    <div class="hero-eye" id="hero-eye">AI Setup — Step 1</div>
+    <h1 id="hero-h1">Let's build your<br><em>AI setup.</em></h1>
+    <p id="hero-p">Tell us who you are and how you work. The more specific you are, the more useful Claude becomes — not just today, but every session after.</p>
+  </div>
+</div>
+
+<main class="main" id="main"></main>
+
+<!-- CHATBOT FAB -->
+<button class="chat-fab" id="chat-fab" title="Ask a question">
+  <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <div>
+      <div class="chat-header-title">Setup Assistant</div>
+      <div class="chat-header-sub">Ask anything about the setup process</div>
+    </div>
+    <button class="chat-close" id="chat-close">×</button>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg ai">Hi! I'm here to help you through the setup. Ask me anything — what a question means, how to answer it, what Claude can do for you, or anything else.</div>
+  </div>
+  <div class="chat-input-row">
+    <input type="text" class="chat-input" id="chat-input" placeholder="Ask a question...">
+    <button class="chat-send" id="chat-send">Send</button>
+  </div>
+</div>
+
+<footer class="footer"><span>Whetstone Collective</span> &nbsp;|&nbsp; Strategy-led AI for Business</footer>
+
+<script>
+const GITHUB_ZIP_URL = "/api/template";
+
+// ---- PATH DEFINITIONS ----
+const PATHS = {
+  owner: {
+    label: "Business Owner",
+    icon: "🏪",
+    desc: "I own or run a business",
+    sections: [
+      { num:"A", style:"brass", title:"Your Business", desc:"What you do, how money comes in, where you are.", fields:[
+        {id:"biz_name",label:"Business name",type:"text",placeholder:"Legal name or DBA"},
+        {id:"biz_what",label:"What does your business do? Explain it like you're talking to a smart friend.",type:"textarea",placeholder:"Plain language. Skip the jargon."},
+        {id:"biz_model",label:"How does money come in?",type:"checkbox",options:["One-time product sales","Recurring subscriptions or retainers","Project or contract work","Hourly services","Multiple streams"]},
+        {id:"biz_stage",label:"Where are you right now?",type:"radio",options:["Still finding what works","Found it, now growing","Growing fast, keeping up","Stable and profitable","Need a shift"]},
+        {id:"biz_revenue",label:"Annual revenue range",hint:"Helps Claude give grounded advice.",type:"radio",options:["Pre-revenue","Under $100K","$100K–$500K","$500K–$2M","$2M–$10M","$10M+"]},
+      ]},
+      { num:"B", style:"slate", title:"Your Customer", desc:"Who buys from you and why.", fields:[
+        {id:"cust_who",label:"Who is your ideal customer?",type:"textarea",placeholder:"Their situation, what's going on when they find you..."},
+        {id:"cust_pain",label:"What problem are they solving when they come to you?",type:"textarea",placeholder:"The thing they're frustrated with or worried about"},
+        {id:"cust_language",label:"What words do they use to describe their problem?",hint:"Quote them if you can. Claude will use this language.",type:"textarea",placeholder:"'I'm drowning in...', 'I can never find time to...'"},
+        {id:"cust_find",label:"How do customers find you today?",type:"checkbox",options:["Word of mouth","Google / SEO","Social media","Paid ads","Networking","Referrals","Repeat business"]},
+      ]},
+      { num:"C", style:"", title:"Priorities and Problems", desc:"What you're working on and what's not working.", fields:[
+        {id:"biz_priority",label:"Top 1-3 priorities for the next 90 days",type:"textarea",placeholder:"Be specific — not 'grow revenue' but what specifically"},
+        {id:"biz_fire",label:"What's on fire right now?",type:"textarea",placeholder:"The thing keeping you up at night"},
+        {id:"biz_manual",label:"What do you do manually that you wish was automated?",type:"textarea",placeholder:"Repetitive tasks that eat your time"},
+        {id:"biz_voice",label:"How do you communicate with customers?",type:"radio",options:["Warm and personal","Professional and polished","Direct and no-nonsense","Casual and approachable","Formal and authoritative"]},
+        {id:"biz_voice_sample",label:"Paste an example of your writing — email, post, or message",hint:"Claude will match this voice in anything it writes for you.",type:"textarea",placeholder:"The more real the better"},
+      ]}
+    ]
+  },
+  employee: {
+    label: "Employee / Professional",
+    icon: "💼",
+    desc: "I work for an organization",
+    sections: [
+      { num:"A", style:"slate", title:"Your Role", desc:"What you do and what a typical day looks like.", fields:[
+        {id:"emp_org",label:"Organization name",type:"text",placeholder:"Company or team name"},
+        {id:"emp_role",label:"Your title or role",type:"text",placeholder:"e.g. Product Manager, Marketing Director, Engineer"},
+        {id:"emp_day",label:"What does a typical day look like? Where does your time actually go?",type:"textarea",placeholder:"Meetings, writing, reviews, research, code, customer calls..."},
+        {id:"emp_function",label:"What function are you in?",type:"radio",options:["Product","Engineering","Marketing","Sales","Operations","Finance","Design","Strategy / Leadership","Other"]},
+        {id:"emp_tools",label:"What tools do you use daily?",type:"textarea",placeholder:"Notion, Jira, Slack, GitHub, Salesforce, Google Docs..."},
+      ]},
+      { num:"B", style:"", title:"Pain Points and Goals", desc:"What's costing you time and what a win looks like.", fields:[
+        {id:"emp_pain",label:"What are your 2-3 biggest time sinks or frustrations?",type:"textarea",placeholder:"Writing, meetings, reviews, reporting, context switching..."},
+        {id:"emp_one",label:"If Claude could do one thing really well for you, what would it be?",type:"text",placeholder:"Be specific"},
+        {id:"emp_project",label:"Is there a project Claude could help with immediately?",type:"textarea",placeholder:"Optional but useful"},
+        {id:"emp_work_lives",label:"Where does your work primarily live?",type:"checkbox",options:["Notion","Google Docs / Drive","Confluence","Jira / Linear","Email","Slack / Teams","Spreadsheets","GitHub / GitLab"]},
+      ]}
+    ]
+  },
+  builder: {
+    label: "Builder / Founder",
+    icon: "🚀",
+    desc: "I'm building something new",
+    sections: [
+      { num:"A", style:"rust", title:"What You're Building", desc:"The venture, the customer, the stage.", fields:[
+        {id:"ven_name",label:"Venture or project name",type:"text",placeholder:"Even if it's just a working title"},
+        {id:"ven_what",label:"What are you building and for whom?",type:"textarea",placeholder:"The problem you're solving and who has it"},
+        {id:"ven_stage",label:"Where are you?",type:"radio",options:["Idea stage — still exploring","Building the first version","Have something working, finding customers","Have customers, figuring out growth","Growing, trying to scale"]},
+        {id:"ven_icp",label:"Who is your ideal first customer?",type:"textarea",placeholder:"Be specific — not 'small businesses' but which kind, in what situation"},
+        {id:"ven_diff",label:"What's your honest differentiator?",type:"textarea",placeholder:"Why would someone choose this over existing alternatives?"},
+      ]},
+      { num:"B", style:"", title:"Current Focus", desc:"What you're working on right now.", fields:[
+        {id:"ven_priority",label:"What are you working on in the next 30 days?",type:"textarea",placeholder:"Specific milestones or deliverables"},
+        {id:"ven_stuck",label:"Where are you stuck or uncertain?",type:"textarea",placeholder:"The thing you keep going back and forth on"},
+        {id:"ven_stack",label:"What's your current tech stack or tools?",type:"textarea",placeholder:"Even if it's just no-code tools or spreadsheets"},
+      ]}
+    ]
+  }
+};
+
+// ---- SHARED SECTIONS ----
+const SHARED_SECTIONS = [
+  { num:"★", style:"brass", title:"About You", desc:"The person behind the work. This shapes everything.", fields:[
+    {id:"name",label:"Your name",type:"text",placeholder:"First name is fine"},
+    {id:"background",label:"What's your background? Career path, skills, how you got here.",type:"textarea",placeholder:"Even if it seems unrelated — it shapes how you think"},
+    {id:"strengths",label:"What do you do better than almost anyone?",type:"textarea",placeholder:"Your actual superpower"},
+    {id:"drains",label:"What drains you most? What do you procrastinate on?",type:"textarea",placeholder:"Be honest — this is how Claude picks up the slack in the right places"},
+    {id:"comm_pref",label:"How do you prefer Claude to communicate?",type:"radio",options:["Concise and direct — get to the point","Detailed and thorough — full picture","Depends on the task"]},
+    {id:"output_pref",label:"Preferred output format?",type:"radio",options:["Bullet points","Prose","Tables when possible","Context-dependent"]},
+    {id:"hard_rules",label:"Any hard rules for Claude? Things it should always or never do.",type:"textarea",placeholder:"e.g. Never use em dashes. Always show sources. Keep it under 200 words."},
+  ]}
+];
+
+// ---- STATE ----
+const state = {
+  phase: 0,
+  selectedPaths: [],
+  answers: {},
+  os: "mac",
+  zipBlob: null,
+  generatedFiles: null,
+  chatOpen: false,
+  chatHistory: []
+};
+
+// ---- HELPERS ----
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+function getAllSections() {
+  let sections = [...SHARED_SECTIONS];
+  state.selectedPaths.forEach(p => { if(PATHS[p]) sections = sections.concat(PATHS[p].sections); });
+  return sections;
+}
+
+function totalQ() {
+  return getAllSections().reduce((a,s)=>a+s.fields.length,0) + 1; // +1 for path selection
+}
+
+function answeredQ() {
+  return Object.values(state.answers).filter(v=>v&&(Array.isArray(v)?v.length>0:String(v).trim())).length + (state.selectedPaths.length>0?1:0);
+}
+
+function updateProgress() {
+  const pct = Math.min(100, Math.round((answeredQ()/Math.max(totalQ(),1))*100));
+  document.getElementById("prog-fill").style.width = pct + "%";
+  document.getElementById("prog-pct").textContent = pct + "%";
+}
+
+function updatePhaseTabs() {
+  ["0","1","2","3"].forEach((i,idx) => {
+    const t = document.getElementById("ptab-"+i);
+    if(!t) return;
+    t.className = "phase-tab" + (idx<state.phase?" done":idx===state.phase?" active":"");
+    const dot = t.querySelector(".phase-dot");
+    if(dot) dot.style.background = idx<state.phase?"var(--brass)":idx===state.phase?"var(--slate)":"var(--border)";
+  });
+}
+
+function setHero(eye,h1,p) {
+  document.getElementById("hero-eye").textContent = eye;
+  document.getElementById("hero-h1").innerHTML = h1;
+  document.getElementById("hero-p").textContent = p;
+  document.getElementById("hero").style.display = "";
+}
+
+function hideHero() { document.getElementById("hero").style.display="none"; }
+
+// ---- FIND FIELD ----
+function findField(id) {
+  for(const sec of getAllSections()) {
+    const f = sec.fields.find(f=>f.id===id);
+    if(f) return f;
+  }
+  return null;
+}
+
+// ---- RENDER SECTIONS ----
+function renderSections(sections, actionHtml) {
+  let html = "";
+  sections.forEach(sec => {
+    const nc = sec.style ? ` ${sec.style}` : "";
+    html += `<div class="card"><div class="card-header">
+      <div class="card-num${nc}">${esc(sec.num)}</div>
+      <div><div class="card-title">${esc(sec.title)}</div><div class="card-desc">${esc(sec.desc)}</div></div>
+    </div><div class="card-body">`;
+    sec.fields.forEach(f => {
+      const val = state.answers[f.id]||"";
+      html += `<div class="fg"><label class="flabel">${esc(f.label)}</label>`;
+      if(f.hint) html += `<div class="fhint">${esc(f.hint)}</div>`;
+      if(f.type==="text") {
+        html += `<input type="text" id="f-${f.id}" value="${esc(val)}" placeholder="${esc(f.placeholder||"")}">`;
+      } else if(f.type==="textarea") {
+        html += `<textarea id="f-${f.id}" placeholder="${esc(f.placeholder||"")}">${esc(val)}</textarea>`;
+      } else if(f.type==="radio") {
+        html += `<div class="cgrid single">`;
+        f.options.forEach((o,i)=>{
+          const sel = val===o;
+          html += `<div class="copt${sel?" selected":""}" data-type="radio" data-field="${f.id}" data-idx="${i}">
+            <div class="cind"></div><span>${esc(o)}</span></div>`;
+        });
+        html += `</div>`;
+      } else if(f.type==="checkbox") {
+        const checked = Array.isArray(state.answers[f.id])?state.answers[f.id]:[];
+        html += `<div class="cgrid">`;
+        f.options.forEach((o,i)=>{
+          const sel = checked.includes(o);
+          html += `<div class="copt${sel?" selected":""}" data-type="checkbox" data-field="${f.id}" data-idx="${i}">
+            <div class="cind sq"></div><span>${esc(o)}</span></div>`;
+        });
+        html += `</div>`;
+      }
+      html += `</div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += actionHtml;
+  document.getElementById("main").innerHTML = html;
+  wireChoices();
+}
+
+function wireChoices() {
+  document.querySelectorAll(".copt").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const type=el.dataset.type, fieldId=el.dataset.field, idx=parseInt(el.dataset.idx);
+      const field=findField(fieldId);
+      if(!field) return;
+      const opt=field.options[idx];
+      if(type==="radio"){
+        state.answers[fieldId]=opt;
+        el.closest(".cgrid").querySelectorAll(".copt").forEach(o=>o.classList.remove("selected"));
+        el.classList.add("selected");
+      } else {
+        if(!Array.isArray(state.answers[fieldId])) state.answers[fieldId]=[];
+        const arr=state.answers[fieldId];
+        const i=arr.indexOf(opt);
+        if(i===-1){arr.push(opt);el.classList.add("selected");}
+        else{arr.splice(i,1);el.classList.remove("selected");}
+      }
+      updateProgress();
+    });
+  });
+}
+
+function collectText() {
+  document.querySelectorAll("input[type=text],textarea").forEach(el=>{
+    const id=el.id.replace("f-","");
+    if(id) state.answers[id]=el.value;
+  });
+}
+
+// ---- PHASE 0: PATH SELECTION ----
+function renderPhase0() {
+  state.phase=0;
+  updatePhaseTabs();
+  setHero("AI Setup — Step 1 of 4","Let's build your<br><em>AI setup.</em>","Tell us who you are and how you work. You can select multiple — many people wear more than one hat.");
+
+  const pathCards = Object.entries(PATHS).map(([key,p])=>{
+    const sel = state.selectedPaths.includes(key);
+    return `<div class="path-card${sel?" selected":""}" data-path="${key}">
+      <div class="path-icon">${p.icon}</div>
+      <div class="path-name">${p.label}</div>
+      <div class="path-desc">${p.desc}</div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("main").innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-num">1</div>
+        <div><div class="card-title">How do you spend your working hours?</div>
+        <div class="card-desc">Select all that apply — you can be a business owner and an employee and a builder at the same time.</div></div>
+      </div>
+      <div class="card-body">
+        <div class="path-grid">${pathCards}</div>
+        <div class="multi-note">Most people select more than one. Claude will build context for each role you select.</div>
+        <div class="action-bar">
+          <span></span>
+          <button class="btn btn-primary" id="btn-next0">Continue →</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.querySelectorAll(".path-card").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const key=el.dataset.path;
+      const idx=state.selectedPaths.indexOf(key);
+      if(idx===-1) state.selectedPaths.push(key);
+      else state.selectedPaths.splice(idx,1);
+      document.querySelectorAll(".path-card").forEach(c=>{
+        c.classList.toggle("selected",state.selectedPaths.includes(c.dataset.path));
+      });
+      updateProgress();
+    });
+  });
+
+  document.getElementById("btn-next0").addEventListener("click",()=>{
+    if(state.selectedPaths.length===0){alert("Please select at least one path.");return;}
+    renderPhase1();
+  });
+
+  updateProgress();
+}
+
+// ---- PHASE 1: INTERVIEW ----
+function renderPhase1() {
+  state.phase=1;
+  updatePhaseTabs();
+  setHero("AI Setup — Step 2 of 4","Your context,<br><em>your way.</em>","Answer as specifically as you can. Claude reads every word of this — the more honest and detailed, the more useful it becomes.");
+
+  const sections = getAllSections();
+  const actionHtml = `<div class="action-bar">
+    <button class="btn btn-secondary" id="btn-back1">← Back</button>
+    <button class="btn btn-primary" id="btn-next1">Generate My Setup →</button>
+  </div>`;
+
+  renderSections(sections, actionHtml);
+
+  document.getElementById("btn-back1").addEventListener("click",()=>{collectText();renderPhase0();});
+  document.getElementById("btn-next1").addEventListener("click",()=>{collectText();doGenerate();});
+  updateProgress();
+  window.scrollTo(0,0);
+}
+
+// ---- FILE BUILDERS ----
+function buildCLAUDEmd() {
+  const a=state.answers, today=new Date().toISOString().split("T")[0];
+  const paths=state.selectedPaths;
+  let active="";
+  if(paths.includes("owner")&&a.biz_fire) active=a.biz_fire.split('\n')[0];
+  else if(paths.includes("employee")&&a.emp_one) active=a.emp_one;
+  else if(paths.includes("builder")&&a.ven_priority) active=a.ven_priority.split('\n')[0];
+
+  let context="";
+  if(paths.includes("owner")) context+=`\n## Business Context\n**Business:** ${a.biz_name||"[Business]"}\n${a.biz_what||""}\n**Stage:** ${a.biz_stage||""} | **Revenue:** ${a.biz_revenue||""}\n**Priority:** ${a.biz_priority||""}\n**On fire:** ${a.biz_fire||""}\n`;
+  if(paths.includes("employee")) context+=`\n## Work Context\n**Org:** ${a.emp_org||""} | **Role:** ${a.emp_role||""}\n**Function:** ${a.emp_function||""}\n**Focus:** ${a.emp_one||""}\n`;
+  if(paths.includes("builder")) context+=`\n## Venture Context\n**Venture:** ${a.ven_name||""}\n${a.ven_what||""}\n**Stage:** ${a.ven_stage||""}\n**Priority:** ${a.ven_priority||""}\n`;
+
+  return `# CLAUDE.md — Working Memory\n\n## Who I Am\n${a.name||"[Name]"} — ${paths.map(p=>PATHS[p].label).join(" + ")}\n\n## My Superpower\n${a.strengths||"[See CONTEXT.md]"}\n\n## What Drains Me\n${a.drains||"[See CONTEXT.md]"}\n${context}\n## How to Work With Me\n- Communication: ${a.comm_pref||"Direct and concise"}\n- Format: ${a.output_pref||"Context-dependent"}\n${a.hard_rules?`- Rules: ${a.hard_rules}`:""}\n\n## Last Updated\n${today}\n\n> Full context in CONTEXT.md — read it before any substantive work.`;
+}
+
+function buildCONTEXTmd() {
+  const a=state.answers, today=new Date().toISOString().split("T")[0];
+  const paths=state.selectedPaths;
+  let doc=`# CONTEXT.md — Full Context\nGenerated: ${today}\n\n---\n\n## About ${a.name||"Me"}\n\n**Background:**\n${a.background||"[To be filled in]"}\n\n**Strengths:**\n${a.strengths||"[To be filled in]"}\n\n**What Drains Me:**\n${a.drains||"[To be filled in]"}\n\n**Communication Preference:** ${a.comm_pref||"Not specified"}\n**Output Format:** ${a.output_pref||"Not specified"}\n**Hard Rules for Claude:** ${a.hard_rules||"None specified"}\n`;
+
+  if(paths.includes("owner")) {
+    doc+=`\n---\n\n## Business Owner Context\n\n**Business:** ${a.biz_name||"[Business]"}\n\n**What It Does:**\n${a.biz_what||"[To be filled in]"}\n\n**Revenue Model:** ${(Array.isArray(a.biz_model)?a.biz_model:[]).join(", ")||"[Not specified]"}\n**Stage:** ${a.biz_stage||"[Not specified]"}\n**Revenue:** ${a.biz_revenue||"[Not specified]"}\n\n**Ideal Customer:**\n${a.cust_who||"[To be filled in]"}\n\n**Problem They're Solving:**\n${a.cust_pain||"[To be filled in]"}\n\n**Their Language:**\n${a.cust_language||"[To be filled in]"}\n\n**How They Find Us:** ${(Array.isArray(a.cust_find)?a.cust_find:[]).join(", ")||"[Not specified]"}\n\n**Top 90-Day Priorities:**\n${a.biz_priority||"[To be filled in]"}\n\n**What's On Fire:**\n${a.biz_fire||"[To be filled in]"}\n\n**What Should Be Automated:**\n${a.biz_manual||"[To be filled in]"}\n\n**Voice Tone:** ${a.biz_voice||"[Not specified]"}\n\n**Voice Sample:**\n${a.biz_voice_sample||"[To be filled in]"}\n`;
+  }
+
+  if(paths.includes("employee")) {
+    doc+=`\n---\n\n## Professional Context\n\n**Org:** ${a.emp_org||"[Organization]"}\n**Role:** ${a.emp_role||"[Role]"}\n**Function:** ${a.emp_function||"[Function]"}\n\n**Typical Day:**\n${a.emp_day||"[To be filled in]"}\n\n**Daily Tools:** ${a.emp_tools||"[To be filled in]"}\n**Work Lives In:** ${(Array.isArray(a.emp_work_lives)?a.emp_work_lives:[]).join(", ")||"[Not specified]"}\n\n**Biggest Time Sinks:**\n${a.emp_pain||"[To be filled in]"}\n\n**Most Valuable Claude Use:**\n${a.emp_one||"[To be filled in]"}\n\n**Current Project:**\n${a.emp_project||"[To be filled in]"}\n`;
+  }
+
+  if(paths.includes("builder")) {
+    doc+=`\n---\n\n## Venture / Builder Context\n\n**Venture:** ${a.ven_name||"[Venture]"}\n\n**What I'm Building:**\n${a.ven_what||"[To be filled in]"}\n\n**Stage:** ${a.ven_stage||"[Not specified]"}\n\n**Ideal First Customer:**\n${a.ven_icp||"[To be filled in]"}\n\n**Differentiator:**\n${a.ven_diff||"[To be filled in]"}\n\n**30-Day Focus:**\n${a.ven_priority||"[To be filled in]"}\n\n**Where I'm Stuck:**\n${a.ven_stuck||"[To be filled in]"}\n\n**Tech Stack / Tools:**\n${a.ven_stack||"[To be filled in]"}\n`;
+  }
+
+  doc+=`\n---\n\n## Last Updated\n${today}`;
+  return doc;
+}
+
+function buildFirstPrompt() {
+  const a=state.answers, paths=state.selectedPaths;
+  let taskSuggestion="";
+  if(paths.includes("owner")&&a.biz_fire) taskSuggestion=`My most urgent issue: "${a.biz_fire.split('\n')[0]}"`;
+  else if(paths.includes("employee")&&a.emp_one) taskSuggestion=`The one thing I most want help with: "${a.emp_one}"`;
+  else if(paths.includes("builder")&&a.ven_priority) taskSuggestion=`My current focus: "${a.ven_priority.split('\n')[0]}"`;
+
+  return `# Your First Claude Session\n\nCopy and paste this exactly:\n\n---\n\nI just set up my AI workspace. Please read my CLAUDE.md and CONTEXT.md, then:\n\n1. Tell me what you now know about me and confirm you have the right picture\n2. List the 3 most valuable things you can help me with based on what I've shared\n3. Ask me the one question that would make you most useful right now\n\n${taskSuggestion}\n\n---\n\n## Recommended First Tasks\n\n${paths.includes("owner")&&a.biz_voice_sample?`**Match My Voice:**\n"Write a [email/post/proposal] for [describe]. Match this voice exactly: [paste your voice sample]"\n\n`:""}${paths.includes("owner")&&a.biz_manual?`**Automate Something:**\n"Help me design a workflow to automate: ${a.biz_manual.split('\n')[0]}"\n\n`:""}${paths.includes("employee")?`**Meeting Debrief:**\n"Use the meeting-debrief skill. Here are my notes: [paste notes]"\n\n`:""}${paths.includes("builder")?`**Competitive Intel:**\n"Run competitive intelligence on [your market]. Focus on: ${a.ven_diff?a.ven_diff.split('\n')[0]:"my differentiation angle"}"\n\n`:""}\n## Your Starting Agents\n\n- **chief-of-staff** — Start here for anything complex or cross-functional\n- **capture** — Paste any brain dump and get structured action items\n- **inbox-triage** — Draft email replies without sending\n- **meeting-debrief** — Turn any transcript or notes into decisions + actions\n- **dossier** — Research any company, person, or competitor before a meeting\n`;
+}
+
+// ---- GENERATE ----
+async function doGenerate() {
+  state.phase=2;
+  updatePhaseTabs();
+  hideHero();
+
+  const claudeMd=buildCLAUDEmd();
+  const contextMd=buildCONTEXTmd();
+  const firstPrompt=buildFirstPrompt();
+  state.generatedFiles={claude:claudeMd,context:contextMd,prompt:firstPrompt};
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <div class="card-header">
+        <div class="card-num brass">→</div>
+        <div><div class="card-title">Building Your AI Setup</div>
+        <div class="card-desc">Generating your context files and fetching the full agent and skill library.</div></div>
+      </div>
+      <div class="card-body">
+        <div class="status-list">
+          <div class="srow"><div class="sdot done"></div><span>Context files generated</span></div>
+          <div class="srow"><div class="sdot active" id="d1"></div><span id="s1">Fetching agent and skill library from GitHub...</span></div>
+          <div class="srow"><div class="sdot" id="d2"></div><span id="s2">Unpacking template</span></div>
+          <div class="srow"><div class="sdot" id="d3"></div><span id="s3">Packaging your workspace</span></div>
+          <div class="srow"><div class="sdot" id="d4"></div><span id="s4">Generating zip file</span></div>
+        </div>
+      </div>
+    </div>`;
+
+  function setStatus(msg,step){
+    for(let i=1;i<=4;i++){
+      const dot=document.getElementById("d"+i),label=document.getElementById("s"+i);
+      if(!dot) continue;
+      if(i<step) dot.className="sdot done";
+      else if(i===step){dot.className="sdot active";if(label&&msg) label.textContent=msg;}
+      else dot.className="sdot";
+    }
+  }
+
+  try {
+    setStatus("Fetching agent and skill library...",1);
+    const resp=await fetch(GITHUB_ZIP_URL);
+    if(!resp.ok) throw new Error("GitHub fetch failed: "+resp.status);
+
+    setStatus("Unpacking template...",2);
+    const buf=await resp.arrayBuffer();
+    const tzip=await JSZip.loadAsync(buf);
+
+    setStatus("Packaging your workspace...",3);
+    const out=new JSZip();
+    const root=out.folder("AI");
+    const tasks=[];
+    tzip.forEach((path,file)=>{
+      const clean=path.replace(/^[^\/]+\//,"");
+      if(!clean||file.dir||clean.includes(".DS_Store")) return;
+      tasks.push(file.async("arraybuffer").then(c=>root.file(clean,c)));
+    });
+    await Promise.all(tasks);
+    root.file("CLAUDE.md",claudeMd);
+    root.file("CONTEXT.md",contextMd);
+    root.file("first-session.md",firstPrompt);
+
+    setStatus("Generating zip...",4);
+    const blob=await out.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});
+    state.zipBlob=blob;
+    setStatus("Done.",5);
+    await new Promise(r=>setTimeout(r,400));
+    renderPhase2();
+  } catch(err) {
+    document.getElementById("main").innerHTML+=`<div class="err-msg">Something went wrong: ${err.message}. Check your connection and try again.</div>`;
+  }
+}
+
+// ---- PHASE 2: REVIEW + DOWNLOAD ----
+function renderPhase2() {
+  state.phase=2;
+  updatePhaseTabs();
+  hideHero();
+
+  const a=state.answers;
+  const files=state.generatedFiles;
+  const sizeMB=state.zipBlob?(state.zipBlob.size/1024/1024).toFixed(1):"?";
+  const slug=(a.biz_name||a.emp_org||a.ven_name||a.name||"my").toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"");
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <div class="card-header">
+        <div class="card-num brass">✓</div>
+        <div><div class="card-title">Your AI setup is ready${a.name?", "+a.name:""}.</div>
+        <div class="card-desc">Review your personalized files, then download your complete workspace.</div></div>
+      </div>
+      <div class="card-body">
+        <div class="result-meta">
+          <div class="rmeta"><div class="rmeta-num">${answeredQ()}</div><div class="rmeta-label">Questions answered</div></div>
+          <div class="rmeta"><div class="rmeta-num">${state.selectedPaths.length}</div><div class="rmeta-label">Role${state.selectedPaths.length!==1?"s":""} configured</div></div>
+          <div class="rmeta"><div class="rmeta-num">${sizeMB}MB</div><div class="rmeta-label">Workspace size</div></div>
+        </div>
+        <div class="ftabs">
+          <button class="ftab active" id="ft-claude">CLAUDE.md</button>
+          <button class="ftab" id="ft-context">CONTEXT.md</button>
+          <button class="ftab" id="ft-prompt">First Session</button>
+        </div>
+        <div class="fprev" id="fprev">${esc(files.claude)}</div>
+        <div class="callout"><strong>What's in your zip:</strong> Your personalized CLAUDE.md and CONTEXT.md, a first-session guide, and the complete agent and skill library (${sizeMB} MB total). Unzip it to set up Claude Desktop.</div>
+        <div class="dl-zone">
+          <div class="dl-icon">📦</div>
+          <h3>ai-workspace-${slug}.zip</h3>
+          <p>Your complete AI workspace — ready to install</p>
+          <button class="btn btn-brass" id="btn-dl">⬇ Download Your Workspace</button>
+        </div>
+        <div class="action-bar">
+          <button class="btn btn-secondary" id="btn-back2">← Edit Answers</button>
+          <button class="btn btn-primary" id="btn-install">Next: Install Guide →</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById("ft-claude").addEventListener("click",function(){switchFTab(files.claude,this);});
+  document.getElementById("ft-context").addEventListener("click",function(){switchFTab(files.context,this);});
+  document.getElementById("ft-prompt").addEventListener("click",function(){switchFTab(files.prompt,this);});
+  document.getElementById("btn-dl").addEventListener("click",()=>triggerDownload(slug));
+  document.getElementById("btn-back2").addEventListener("click",()=>{state.phase=1;renderPhase1();});
+  document.getElementById("btn-install").addEventListener("click",()=>renderPhase3());
+
+  window.scrollTo(0,0);
+}
+
+function switchFTab(content,btn){
+  document.querySelectorAll(".ftab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("fprev").textContent=content;
+}
+
+function triggerDownload(slug){
+  if(!state.zipBlob) return;
+  const url=URL.createObjectURL(state.zipBlob);
+  const a2=document.createElement("a");a2.href=url;a2.download=`ai-workspace-${slug}.zip`;a2.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---- PHASE 3: INSTALL WIZARD ----
+function renderPhase3() {
+  state.phase=3;
+  updatePhaseTabs();
+  hideHero();
+
+  const a=state.answers;
+  const slug=(a.biz_name||a.emp_org||a.ven_name||a.name||"my").toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"");
+
+  function macSteps(){return `
+    <div class="wizard-step">
+      <div class="wizard-step-header"><div class="wizard-step-num">1</div><div class="wizard-step-title">Download Claude Desktop</div></div>
+      <div class="wizard-step-body">
+        Go to <strong>claude.ai/download</strong> and download Claude Desktop for Mac. Open the .dmg file and drag Claude to your Applications folder.
+        <div class="callout green" style="margin-top:10px"><strong>Already have it?</strong> Make sure you're on the latest version. Click Claude in your menu bar → Check for Updates.</div>
+      </div>
+    </div>
+    <div class="wizard-step">
+      <div class="wizard-step-header"><div class="wizard-step-num">2</div><div class="wizard-step-title">Unzip Your Workspace</div></div>
+      <div class="wizard-step-body">
+        Find <span class="code-inline">ai-workspace-${slug}.zip</span> in your Downloads folder and double-click to unzip it. You'll get a folder called <span class="code-inline">AI</span>.
+        Move that folder to your home directory — the one with your name on it in Finder.
+        <div class="code-block">Open Finder → Go → Home → drag the AI folder here</div>
+        Your workspace should now be at: <span class="code-inline">/Users/[yourname]/AI</span>
+      </div>
+    </div>
+    <div class="wizard-step">
+      <div class="wizard-step-header"><div class="wizard-step-num">3</div><div class="wizard-step-title">Open Claude Desktop Settings</div></div>
+      <div class="wizard-step-body">
+        Open Claude Desktop. In your Mac menu bar at the top of the screen, click <strong>Claude</strong> → <strong>Settings</strong>.<br><br>
+        Click the <strong>Developer</strong> tab on the left. Then click <strong>Edit Config</strong>.
+        This opens a file called <span class="code-inline">claude_desktop_config.json</span> in a text editor.
+      </div>
+    </div>
+    <div class="wizard-step">
+      <div class="wizard-step-header"><div class="wizard-step-num">4</div><div class="wizard-step-title">Point Claude at Your Workspace</div></div>
+      <div class="wizard-step-body">
+        Replace everything in that file with this — swap <span class="code-inline">yourname</span> for your actual Mac username:
+        <div class="code-block">{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/yourname/AI"
+      ]
+    }
+  }
+}</div>
+        Save the file (Cmd+S), then quit and relaunch Claude Desktop.
+        <div class="callout"><strong>Find your username:</strong> Open Terminal, type <span class="code-inline">whoami</span> and hit Enter. That's your username.</div>
+      </div>
+    </div>
+    <div class="wizard-step">
+      <div class="wizard-step-header"><div class="wizard-step-num">5</div><div class="wizard-step-title">Verify It's Working</div></div>
+      <div class="wizard-step-body">
+        Open Claude Desktop and start a new conversation. You should see a small plug icon (🔌) or tools indicator near the message box — this means Claude can see your files.<br><br>
+        Type this to confirm:
+        <div class="code-block">Read my CLAUDE.md file and tell me what you know about me.</div>
+        Claude should respond with your name, role, and context. If it does — you're live.
+        <div class="callout blue"><strong>Don't see the plug icon?</strong> Go back to Settings → Developer and make sure the config saved correctly. Check for typos in the username path.</div>
+      </div>
+    </div>`;}
+
+  function winSteps(){return `
+    <div class="wizard-step">
+      <div class="wizard-step-header"><div class="wizard-step-num">1</div><div class="wizard-step-title">Download Claude Desktop</div></div>
+      <div class="wizard-step-body">
+        Go to <strong>claude.ai/download</strong> and download Claude Desktop for Windows. Run the installer and follow the prompts.
+        <div class="callout green" style="margin-top:10px"><strong>Already have it?</strong> Make sure you're on the latest version — open Claude and check the menu for updates.</div>
+      </div>
+    </div>
+    <div class="wizard-step">
+      <div class="wizard-step-header"><div class="wizard-step-num">2</div><div class="wizard-step-title">Unzip Your Workspace</div></div>
+      <div class="wizard-step-body">
+        Find <span class="code-inline">ai-workspace-${slug}.zip</span> in your Downloads folder. Right-click it and choose <strong>Extract All</strong>. You'll get a folder called <span class="code-inline">AI</span>.<br><br>
+        Move that folder to your user folder. Open File Explorer, click on your username in the left panel, and drop the AI folder there.
+        <div class="callout">Your workspace should be at: <span class="code-inline">C:\\Users\\[yourname]\\AI</span></div>
+      </div>
+    </div>
+    <div class="wizard-step">
+      <div class="wizard-step-header"><div class="wizard-step-num">3</div><div class="wizard-step-title">Open Claude Desktop Settings</div></div>
+      <div class="wizard-step-body">
+        Open Claude Desktop. Click the <strong>≡ menu</strong> (three lines) in the top left → <strong>Settings</strong>.<br><br>
+        Click the <strong>Developer</strong> tab. Then click <strong>Edit Config</strong>.
+        This opens a config file in Notepad or another text editor.
+        <div class="callout blue"><strong>Note:</strong> On Windows, the "Edit Config" button is the most reliable way to find the right file — don't try to navigate to it manually.</div>
+      </div>
+    </div>
+    <div class="wizard-step">
+      <div class="wizard-step-header"><div class="wizard-step-num">4</div><div class="wizard-step-title">Point Claude at Your Workspace</div></div>
+      <div class="wizard-step-body">
+        Replace everything in that file with this — swap <span class="code-inline">yourname</span> for your actual Windows username:
+        <div class="code-block">{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\\\Users\\\\yourname\\\\AI"
+      ]
+    }
+  }
+}</div>
+        Save the file, then close and reopen Claude Desktop completely.
+        <div class="callout"><strong>Find your username:</strong> Open the Start menu and look at the top — your username appears there. Or open a command prompt and type <span class="code-inline">whoami</span>.</div>
+      </div>
+    </div>
+    <div class="wizard-step">
+      <div class="wizard-step-header"><div class="wizard-step-num">5</div><div class="wizard-step-title">Verify It's Working</div></div>
+      <div class="wizard-step-body">
+        Open Claude Desktop and start a new conversation. Look for a plug icon (🔌) or tools indicator near the message box — this means Claude can see your files.<br><br>
+        Type this to confirm:
+        <div class="code-block">Read my CLAUDE.md file and tell me what you know about me.</div>
+        Claude should respond with your name and context from the onboarding interview.
+        <div class="callout blue"><strong>Not working?</strong> Make sure Node.js is installed — go to <strong>nodejs.org</strong>, download the LTS version, install it, then restart Claude Desktop and try again.</div>
+      </div>
+    </div>`;}
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <div class="card-header">
+        <div class="card-num slate">↓</div>
+        <div><div class="card-title">Install Claude Desktop</div>
+        <div class="card-desc">Follow these steps to get Claude reading your workspace files. Takes about 10 minutes.</div></div>
+      </div>
+      <div class="card-body">
+        <div class="os-tabs">
+          <button class="os-tab active" id="os-mac">🍎 Mac</button>
+          <button class="os-tab" id="os-win">🪟 Windows</button>
+        </div>
+        <div id="wizard-steps">${macSteps()}</div>
+        <div class="action-bar">
+          <button class="btn btn-secondary" id="btn-back3">← Back</button>
+          <button class="btn btn-brass" id="btn-dl3">⬇ Download Zip Again</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-num brass">→</div>
+        <div><div class="card-title">Your First Session</div>
+        <div class="card-desc">Once Claude is reading your files, start here.</div></div>
+      </div>
+      <div class="card-body">
+        <div class="callout green"><strong>Copy this into Claude Desktop:</strong></div>
+        <div class="code-block">Read my CLAUDE.md and CONTEXT.md, then tell me what you know about me and what the 3 most valuable things you can help me with are. Then ask me the one question that would make you most useful right now.</div>
+        <div class="callout" style="margin-top:16px"><strong>After that, use your first-session.md file</strong> — it's in your AI folder and has specific first tasks tailored to your answers.</div>
+      </div>
+    </div>`;
+
+  document.getElementById("os-mac").addEventListener("click",function(){
+    this.classList.add("active"); document.getElementById("os-win").classList.remove("active");
+    document.getElementById("wizard-steps").innerHTML=macSteps();
+  });
+  document.getElementById("os-win").addEventListener("click",function(){
+    this.classList.add("active"); document.getElementById("os-mac").classList.remove("active");
+    document.getElementById("wizard-steps").innerHTML=winSteps();
+  });
+  document.getElementById("btn-back3").addEventListener("click",()=>renderPhase2());
+  document.getElementById("btn-dl3").addEventListener("click",()=>triggerDownload(slug));
+
+  window.scrollTo(0,0);
+}
+
+// ---- CHATBOT ----
+function initChat() {
+  document.getElementById("chat-fab").addEventListener("click",()=>{
+    state.chatOpen=!state.chatOpen;
+    document.getElementById("chat-panel").classList.toggle("open",state.chatOpen);
+  });
+  document.getElementById("chat-close").addEventListener("click",()=>{
+    state.chatOpen=false;
+    document.getElementById("chat-panel").classList.remove("open");
+  });
+  document.getElementById("chat-send").addEventListener("click",sendChat);
+  document.getElementById("chat-input").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat();}});
+}
+
+async function sendChat() {
+  const input=document.getElementById("chat-input");
+  const msg=input.value.trim();
+  if(!msg) return;
+  input.value="";
+
+  addChatMsg(msg,"user");
+  const thinking=addChatMsg("Thinking...","ai thinking");
+
+  const context=`You are a friendly AI setup assistant helping someone configure Claude for their work and business. They are currently on phase ${state.phase+1} of a 4-phase setup wizard (1=path selection, 2=interview, 3=file review, 4=install). Their selected paths are: ${state.selectedPaths.map(p=>PATHS[p].label).join(", ")||"not selected yet"}. Be concise, practical, and encouraging. Answer in 2-4 sentences max. If they ask about the setup process, guide them. If they ask what Claude can do, give specific examples relevant to their selected paths.`;
+
+  try {
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-6",
+        max_tokens:300,
+        system:context,
+        messages:[...state.chatHistory,{role:"user",content:msg}]
+      })
+    });
+    const data=await resp.json();
+    const reply=data.content?.[0]?.text||"Sorry, I had trouble with that. Try again.";
+    state.chatHistory.push({role:"user",content:msg},{role:"assistant",content:reply});
+    thinking.textContent=reply;
+    thinking.className="chat-msg ai";
+  } catch(err) {
+    thinking.textContent="Something went wrong. Check your connection and try again.";
+    thinking.className="chat-msg ai";
+  }
+}
+
+function addChatMsg(text,cls){
+  const msgs=document.getElementById("chat-messages");
+  const div=document.createElement("div");
+  div.className="chat-msg "+cls;
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+// ---- INIT ----
+initChat();
+renderPhase0();
+</script>
+</body>
+</html>
